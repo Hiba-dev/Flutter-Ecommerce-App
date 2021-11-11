@@ -16,7 +16,7 @@ class CustomActionBar extends StatelessWidget {
 
   final CollectionReference _usersRef = FirebaseFirestore
       .instance
-      .collection("Users");
+      .collection("User");
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +36,10 @@ class CustomActionBar extends StatelessWidget {
         ): null
       ),
       padding: EdgeInsets.only(
-        top: 56.0,
-        left: 24.0,
-        right: 24.0,
-        bottom: 42.0,
+        top: 51.0,
+        left: 19.0,
+        right: 19.0,
+        bottom: 37.0,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

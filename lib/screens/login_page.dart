@@ -1,168 +1,191 @@
-import 'package:a_commerce/constants.dart';
 import 'package:a_commerce/screens/register_page.dart';
-import 'package:a_commerce/widgets/custom_btn.dart';
-import 'package:a_commerce/widgets/custom_input.dart';
+import 'package:a_commerce/widgets/changescreen.dart';
+import 'package:a_commerce/widgets/mytextformField.dart';
+import 'package:a_commerce/widgets/passwordtextformfield.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../widgets/mybutton.dart';
 
-class LoginPage extends StatefulWidget {
+class Login extends StatefulWidget {
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _LoginState createState() => _LoginState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+bool isLoading = false;
+String p =
+    r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+String q = r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
 
-  Future<void> _alertDialogBuilder(String error) async {
-    return showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Error"),
-            content: Container(
-              child: Text(error),
-            ),
-            actions: [
-              FlatButton(
-                child: Text("Close Dialog"),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              )
-            ],
-          );
-        }
-    );
-  }
+RegExp regExp = new RegExp(p);
+RegExp reggexpp = new RegExp(q);
 
-  // Create a new user account
-  Future<String> _loginAccount() async {
+final TextEditingController email = TextEditingController();
+final TextEditingController password = TextEditingController();
+
+bool obserText = true;
+
+class _LoginState extends State<Login> {
+  void submit(context) async {
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _loginEmail, password: _loginPassword);
-      return null;
-    } on FirebaseAuthException catch(e) {
-      if (e.code == 'weak-password') {
-        return 'The password provided is too weak.';
-      } else if (e.code == 'email-already-in-use') {
-        return 'The account already exists for that email.';
-      }
-      return e.message;
-    } catch (e) {
-      return e.toString();
-    }
-  }
-
-  void _submitForm() async {
-    // Set the form to loading state
-    setState(() {
-      _loginFormLoading = true;
-    });
-
-    // Run the create account method
-    String _loginFeedback = await _loginAccount();
-
-    // If the string is not null, we got error while create account.
-    if(_loginFeedback != null) {
-      _alertDialogBuilder(_loginFeedback);
-
-      // Set the form to regular state [not loading].
       setState(() {
-        _loginFormLoading = false;
+        isLoading = true;
       });
+      UserCredential result = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+              email: email.text, password: password.text);
+      print(result);
+    } on PlatformException catch (error) {
+      var message = "Please Check Your Internet Connection ";
+      if (error.message != null) {
+        message = error.message;
+      }
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(
+          content: Text(message.toString()),
+          duration: Duration(milliseconds: 800),
+          backgroundColor: Theme.of(context).primaryColor,
+        ),
+      );
+      setState(() {
+        isLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        isLoading = false;
+      });
+      _scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text(error.toString()),
+        duration: Duration(milliseconds: 800),
+        backgroundColor: Theme.of(context).primaryColor,
+      ));
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  void vaildation() async {
+    if (email.text.isEmpty && password.text.isEmpty) {
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(
+          content: Text("Both Flied Are Empty"),
+        ),
+      );
+    } else if (email.text.isEmpty) {
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(
+          content: Text("Email Is Empty"),
+        ),
+      );
+    } else if (!regExp.hasMatch(email.text)) {
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(
+          content: Text("Please Try Vaild Email"),
+        ),
+      );
+    } else if (password.text.isEmpty) {
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(
+          content: Text("Password Is Empty"),
+        ),
+      );
+    }else if (!reggexpp.hasMatch(password.text)) {
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(
+          content: Text("Password is too weak"),
+        ),
+      );
+    }  
+     else {
+      submit(context);
     }
   }
 
-  // Default Form Loading State
-  bool _loginFormLoading = false;
-
-  // Form Input Field Values
-  String _loginEmail = "";
-  String _loginPassword = "";
-
-  // Focus Node for input fields
-  FocusNode _passwordFocusNode;
-
-  @override
-  void initState() {
-    _passwordFocusNode = FocusNode();
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _passwordFocusNode.dispose();
-    super.dispose();
+  Widget _buildAllPart() {
+    return Expanded(
+      flex: 3,
+      child: Container(
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Column(
+              children: <Widget>[
+                Text(
+                  "Login",
+                  style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                MyTextFormField(
+                  name: "Email",
+                  controller: email,
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                PasswordTextFormField(
+                  obserText: obserText,
+                  name: "Password",
+                  controller: password,
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                    setState(() {
+                      obserText = !obserText;
+                    });
+                  },
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                isLoading == false
+                    ? MyButton(
+                        onPressed: () {
+                          vaildation();
+                        },
+                        name: "Login",
+                      )
+                    : Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                SizedBox(
+                  height: 10,
+                ),
+                ChangeScreen(
+                    name: "SignUp",
+                    whichAccount: "I Have Not Account!",
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (ctx) => SignUp(),
+                        ),
+                      );
+                    }),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
+      key: _scaffoldKey,
+      body: Form(
+        key: _formKey,
         child: Container(
-          width: double.infinity,
+          margin: EdgeInsets.symmetric(horizontal: 10),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: EdgeInsets.only(
-                  top: 24.0,
-                ),
-                child: Text(
-                  "Welcome User,\nLogin to your account",
-                  textAlign: TextAlign.center,
-                  style: Constants.boldHeading,
-                ),
-              ),
-              Column(
-                children: [
-                  CustomInput(
-                    hintText: "Email...",
-                    onChanged: (value) {
-                      _loginEmail = value;
-                    },
-                    onSubmitted: (value) {
-                      _passwordFocusNode.requestFocus();
-                    },
-                    textInputAction: TextInputAction.next,
-                  ),
-                  CustomInput(
-                    hintText: "Password...",
-                    onChanged: (value) {
-                      _loginPassword = value;
-                    },
-                    focusNode: _passwordFocusNode,
-                    isPasswordField: true,
-                    onSubmitted: (value) {
-                      _submitForm();
-                    },
-                  ),
-                  CustomBtn(
-                    text: "Login",
-                    onPressed: () {
-                      _submitForm();
-                    },
-                    isLoading: _loginFormLoading,
-                  )
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 16.0,
-                ),
-                child: CustomBtn(
-                  text: "Create New Account",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => RegisterPage()
-                      ),
-                    );
-                  },
-                  outlineBtn: true,
-                ),
-              ),
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              _buildAllPart(),
             ],
           ),
         ),
